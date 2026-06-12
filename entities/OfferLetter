@@ -1,0 +1,47 @@
+{
+  "name": "OfferLetter",
+  "type": "object",
+  "properties": {
+    "candidate_id": {
+      "type": "string",
+      "description": "Reference to the Candidate"
+    },
+    "candidate_name": {
+      "type": "string",
+      "description": "Name of the candidate"
+    },
+    "position": {
+      "type": "string",
+      "description": "Position offered"
+    },
+    "salary": {
+      "type": "string",
+      "description": "Offered salary/package"
+    },
+    "joining_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Expected joining date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "sent",
+        "accepted",
+        "declined"
+      ],
+      "default": "draft",
+      "description": "Offer letter status"
+    },
+    "file_url": {
+      "type": "string",
+      "description": "URL to the generated offer letter PDF"
+    }
+  },
+  "required": [
+    "candidate_id",
+    "candidate_name",
+    "position"
+  ]
+}

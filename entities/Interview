@@ -1,0 +1,79 @@
+{
+  "name": "Interview",
+  "type": "object",
+  "properties": {
+    "candidate_id": {
+      "type": "string",
+      "description": "Reference to the Candidate"
+    },
+    "candidate_name": {
+      "type": "string",
+      "description": "Name of the candidate"
+    },
+    "recruiter_id": {
+      "type": "string",
+      "description": "Reference to the recruiter User"
+    },
+    "recruiter_name": {
+      "type": "string",
+      "description": "Name of the recruiter"
+    },
+    "interview_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the interview"
+    },
+    "interview_time": {
+      "type": "string",
+      "description": "Time of the interview (e.g. 10:00 AM)"
+    },
+    "interview_type": {
+      "type": "string",
+      "enum": [
+        "hr",
+        "technical",
+        "managerial",
+        "final"
+      ],
+      "description": "Type of interview"
+    },
+    "mode": {
+      "type": "string",
+      "enum": [
+        "online",
+        "offline"
+      ],
+      "description": "Interview mode"
+    },
+    "meeting_link": {
+      "type": "string",
+      "description": "Meeting link for online interviews"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "completed",
+        "cancelled"
+      ],
+      "default": "scheduled",
+      "description": "Interview status"
+    },
+    "feedback": {
+      "type": "string",
+      "description": "Recruiter feedback after interview"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": [
+    "candidate_id",
+    "candidate_name",
+    "recruiter_id",
+    "interview_date",
+    "interview_type",
+    "mode"
+  ]
+}

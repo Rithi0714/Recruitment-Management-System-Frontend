@@ -1,0 +1,101 @@
+import React, { useState, useEffect } from 'react';
+import { base44 } from '@/api/base44Client';
+import { useQuery } from '@tanstack/react-query';
+import StatCard from '@/components/shared/StatCard';
+import PageHeader from '@/components/shared/PageHeader';
+import StatusBadge from '@/components/shared/StatusBadge';
+import { Users, Calendar, CheckCircle, Clock } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { format } from 'date-fns';
+
+export default function RecruiterDashboard() {
+  // Demo user — replace with base44.auth.me() once real auth is set up
+  const [currentUser] = useState({ id: 'recruiter-1', full_name: 'Jane Smith', role: 'recruiter' });
+
+  const { data: candidates = [] } = useQuery({
+    queryKey: ['candidates'],
+    queryFn: () => base44.entities.Candidate.list('-created_date', 200),
+    enabled: !!currentUser,
+  });
+
+  const { data: interviews = [] } = useQuery({
+    queryKey: ['interviews'],
+    queryFn: () => base44.entities.Interview.list('-created_date', 200),
+    enabled: !!currentUser,
+  });
+
+  const myCandidates = candidates.filter(c => c.assigned_recruiter_id === currentUser?.id);
+  const myInterviews = interviews.filter(i => i.recruiter_id === currentUser?.id);
+  const scheduledCount = myInterviews.filter(i => i.status === 'scheduled').length;
+  const completedCount = myInterviews.filter(i => i.status === 'completed').length;
+
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const todaysInterviews = myInterviews.filter(i => i.interview_date === today && i.status === 'scheduled');
+  const recentCandidates = myCandidates.slice(0, 5);
+
+  return (
+    <div>
+      <PageHeader title="Dashboard" subtitle={`Welcome back, ${currentUser?.full_name || 'Recruiter'}`} />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        <StatCard title="My Candidates" value={myCandidates.length} icon={Users} color="primary" />
+        <StatCard title="Scheduled Interviews" value={scheduledCount} icon={Calendar} color="warning" />
+        <StatCard title="Interviews Completed" value={completedCount} icon={CheckCircle} color="success" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-base font-heading flex items-center gap-2">
+              <Clock className="w-4 h-4 text-primary" />
+              Today's Interviews
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {todaysInterviews.length > 0 ? (
+              <div className="space-y-3">
+                {todaysInterviews.map(i => (
+                  <div key={i.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
+                    <div>
+                      <p className="text-sm font-medium">{i.candidate_name}</p>
+                      <p className="text-xs text-muted-foreground">{i.interview_time} · {i.interview_type} · {i.mode}</p>
+                    </div>
+                    <StatusBadge status={i.status} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">No interviews today</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-base font-heading flex items-center gap-2">
+              <Users className="w-4 h-4 text-primary" />
+              Recent Candidates Assigned
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {recentCandidates.length > 0 ? (
+              <div className="space-y-3">
+                {recentCandidates.map(c => (
+                  <div key={c.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
+                    <div>
+                      <p className="text-sm font-medium">{c.name}</p>
+                      <p className="text-xs text-muted-foreground">{c.position}</p>
+                    </div>
+                    <StatusBadge status={c.status} />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground text-center py-8">No candidates assigned yet</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,75 @@
+{
+  "name": "Candidate",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Full name of the candidate"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email address"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Phone number"
+    },
+    "position": {
+      "type": "string",
+      "description": "Position applied for"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "linkedin",
+        "indeed",
+        "referral",
+        "website",
+        "job_fair",
+        "other"
+      ],
+      "description": "How the candidate was sourced"
+    },
+    "resume_url": {
+      "type": "string",
+      "description": "URL to uploaded resume file"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "applied",
+        "in_review",
+        "shortlisted",
+        "interview_scheduled",
+        "interview_completed",
+        "selected",
+        "rejected",
+        "offer_sent",
+        "hired"
+      ],
+      "default": "applied",
+      "description": "Current status in recruitment pipeline"
+    },
+    "assigned_recruiter_id": {
+      "type": "string",
+      "description": "ID of the assigned recruiter (User entity)"
+    },
+    "assigned_recruiter_name": {
+      "type": "string",
+      "description": "Name of the assigned recruiter"
+    },
+    "feedback": {
+      "type": "string",
+      "description": "Recruiter feedback notes"
+    },
+    "skills": {
+      "type": "string",
+      "description": "Comma-separated skills"
+    }
+  },
+  "required": [
+    "name",
+    "email",
+    "position"
+  ]
+}

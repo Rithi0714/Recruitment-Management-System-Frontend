@@ -1,0 +1,35 @@
+{
+  "name": "ActivityLog",
+  "type": "object",
+  "properties": {
+    "action": {
+      "type": "string",
+      "description": "Description of the action taken"
+    },
+    "entity_type": {
+      "type": "string",
+      "enum": [
+        "candidate",
+        "interview",
+        "recruiter",
+        "offer_letter"
+      ],
+      "description": "Type of entity involved"
+    },
+    "entity_id": {
+      "type": "string",
+      "description": "ID of the entity involved"
+    },
+    "performed_by": {
+      "type": "string",
+      "description": "Name of the user who performed the action"
+    },
+    "role": {
+      "type": "string",
+      "description": "Role of the user"
+    }
+  },
+  "required": [
+    "action"
+  ]
+}
