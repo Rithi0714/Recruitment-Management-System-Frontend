@@ -5,8 +5,6 @@ import {
   LayoutDashboard, Users, Calendar, UserCheck, UserPlus, Settings,
   Briefcase, FileText, ChevronLeft, ChevronRight, LogOut
 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
-
 const hrLinks = [
   { to: '/hr/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/hr/candidates', icon: Users, label: 'Applied Candidates' },
@@ -36,7 +34,7 @@ export default function Sidebar({ role, collapsed, onToggle }) {
   const links = role === 'hr' ? hrLinks : role === 'recruiter' ? recruiterLinks : adminLinks;
 
   const handleLogout = () => {
-    base44.auth.logout('/');
+    window.location.href = '/';
   };
 
   return (

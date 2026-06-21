@@ -1,6 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState } from 'react';
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -12,34 +10,16 @@ import { Card } from '@/components/ui/card';
 import { CheckCircle, Video, MapPin, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { dummyInterviews } from '@/lib/dummyData';
 
 export default function RecruiterInterviews() {
-  const [currentUser, setCurrentUser] = useState(null);
+  const currentUser = { id: 'recruiter-1', full_name: 'Jane Smith', role: 'recruiter' };
+  const [interviews, setInterviews] = useState(dummyInterviews);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [selectedInterview, setSelectedInterview] = useState(null);
   const [feedback, setFeedback] = useState('');
-  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    base44.auth.me().then(setCurrentUser);
-  }, []);
-
-  const { data: interviews = [], isLoading } = useQuery({
-    queryKey: ['interviews'],
-    queryFn: () => base44.entities.Interview.list('-created_date', 200),
-    enabled: !!currentUser,
-  });
-
-  const myInterviews = interviews.filter(i => i.recruiter_id === currentUser?.id);
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Interview.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['interviews'] });
-      toast.success('Interview updated');
-      setShowFeedbackModal(false);
-    },
-  });
+  const myInterviews = interviews.filter(i => i.recruiter_id === currentUser.id);
 
   const markComplete = (interview) => {
     setSelectedInterview(interview);
@@ -49,10 +29,11 @@ export default function RecruiterInterviews() {
 
   const submitFeedback = () => {
     if (!selectedInterview) return;
-    updateMutation.mutate({
-      id: selectedInterview.id,
-      data: { status: 'completed', feedback },
-    });
+    setInterviews(prev => prev.map(i =>
+      i.id === selectedInterview.id ? { ...i, status: 'completed', feedback: feedback || i.feedback } : i
+    ));
+    toast.success('Interview updated');
+    setShowFeedbackModal(false);
   };
 
   return (
@@ -74,9 +55,7 @@ export default function RecruiterInterviews() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">Loading...</TableCell></TableRow>
-              ) : myInterviews.length === 0 ? (
+              {myInterviews.length === 0 ? (
                 <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">No interviews assigned</TableCell></TableRow>
               ) : (
                 myInterviews.map((i) => (
@@ -97,15 +76,13 @@ export default function RecruiterInterviews() {
                         {i.mode === 'online' && i.meeting_link && (
                           <a href={i.meeting_link} target="_blank" rel="noopener noreferrer">
                             <Button variant="ghost" size="sm" className="gap-1 text-primary">
-                              <ExternalLink className="w-3 h-3" />
-                              Join
+                              <ExternalLink className="w-3 h-3" /> Join
                             </Button>
                           </a>
                         )}
                         {i.status === 'scheduled' && (
                           <Button variant="outline" size="sm" className="gap-1" onClick={() => markComplete(i)}>
-                            <CheckCircle className="w-3 h-3" />
-                            Mark Complete
+                            <CheckCircle className="w-3 h-3" /> Mark Complete
                           </Button>
                         )}
                       </div>
@@ -118,7 +95,6 @@ export default function RecruiterInterviews() {
         </div>
       </Card>
 
-      {/* Feedback Modal */}
       <Dialog open={showFeedbackModal} onOpenChange={setShowFeedbackModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -132,18 +108,11 @@ export default function RecruiterInterviews() {
               </div>
               <div className="space-y-2">
                 <Label>Feedback</Label>
-                <Textarea
-                  value={feedback}
-                  onChange={(e) => setFeedback(e.target.value)}
-                  placeholder="Share your observations and recommendation..."
-                  rows={5}
-                />
+                <Textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Share your observations and recommendation..." rows={5} />
               </div>
               <div className="flex justify-end gap-3">
                 <Button variant="outline" onClick={() => setShowFeedbackModal(false)}>Cancel</Button>
-                <Button onClick={submitFeedback} disabled={updateMutation.isPending}>
-                  Submit & Complete
-                </Button>
+                <Button onClick={submitFeedback}>Submit & Complete</Button>
               </div>
             </div>
           )}

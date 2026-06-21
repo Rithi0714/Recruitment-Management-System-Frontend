@@ -1,6 +1,4 @@
-import React from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import React, { useMemo } from 'react';
 import StatCard from '@/components/shared/StatCard';
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
@@ -8,22 +6,12 @@ import { Users, Calendar, UserCheck, UserX, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { dummyCandidates, dummyInterviews, dummyActivityLogs } from '@/lib/dummyData';
 
 export default function HRDashboard() {
-  const { data: candidates = [] } = useQuery({
-    queryKey: ['candidates'],
-    queryFn: () => base44.entities.Candidate.list('-created_date', 100),
-  });
-
-  const { data: interviews = [] } = useQuery({
-    queryKey: ['interviews'],
-    queryFn: () => base44.entities.Interview.list('-created_date', 100),
-  });
-
-  const { data: activities = [] } = useQuery({
-    queryKey: ['activities'],
-    queryFn: () => base44.entities.ActivityLog.list('-created_date', 10),
-  });
+  const candidates = dummyCandidates;
+  const interviews = dummyInterviews;
+  const activities = dummyActivityLogs;
 
   const applied = candidates.length;
   const scheduled = interviews.filter(i => i.status === 'scheduled').length;
@@ -35,7 +23,6 @@ export default function HRDashboard() {
     .sort((a, b) => a.interview_date.localeCompare(b.interview_date))
     .slice(0, 5);
 
-  // Chart data - interviews per month
   const monthlyData = React.useMemo(() => {
     const months = {};
     interviews.forEach(i => {
@@ -59,7 +46,6 @@ export default function HRDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Chart */}
         <Card className="lg:col-span-2 shadow-sm">
           <CardHeader>
             <CardTitle className="text-base font-heading">Interviews Over Time</CardTitle>
@@ -76,19 +62,15 @@ export default function HRDashboard() {
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[260px] flex items-center justify-center text-muted-foreground text-sm">
-                No interview data yet
-              </div>
+              <div className="h-[260px] flex items-center justify-center text-muted-foreground text-sm">No interview data yet</div>
             )}
           </CardContent>
         </Card>
 
-        {/* Upcoming Interviews */}
         <Card className="shadow-sm">
           <CardHeader>
             <CardTitle className="text-base font-heading flex items-center gap-2">
-              <Clock className="w-4 h-4 text-primary" />
-              Upcoming Interviews
+              <Clock className="w-4 h-4 text-primary" /> Upcoming Interviews
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -113,7 +95,6 @@ export default function HRDashboard() {
         </Card>
       </div>
 
-      {/* Recent Activity */}
       <Card className="mt-6 shadow-sm">
         <CardHeader>
           <CardTitle className="text-base font-heading">Recent Activity</CardTitle>

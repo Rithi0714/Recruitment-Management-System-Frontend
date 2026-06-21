@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
 import PageHeader from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +13,6 @@ import { toast } from 'sonner';
 export default function HRSettings() {
   const [user, setUser] = useState(null);
   const [profileForm, setProfileForm] = useState({ full_name: '', phone: '', department: '' });
-  const [passwordForm, setPasswordForm] = useState({ current: '', newPass: '', confirm: '' });
   const [emailAutoEnabled, setEmailAutoEnabled] = useState(true);
   const [candidateEmailTemplate, setCandidateEmailTemplate] = useState(
     'Dear {candidate_name},\n\nYou have been scheduled for an interview for the position of {position} on {date} at {time}.\n\nPlease confirm your availability.\n\nBest regards,\nHR Team'
@@ -22,20 +20,21 @@ export default function HRSettings() {
   const [recruiterEmailTemplate, setRecruiterEmailTemplate] = useState(
     'Dear {recruiter_name},\n\nYou have been assigned to interview {candidate_name} for the position of {position} on {date} at {time}.\n\nPlease prepare accordingly.\n\nBest regards,\nHR Team'
   );
+  const [offerLetterTemplate, setOfferLetterTemplate] = useState(
+    'Dear {candidate_name},\n\nCongratulations! We are delighted to offer you the position of {position} at our organization.\n\nOffered Package: {salary}\nExpected Joining Date: {joining_date}\n\nPlease review the attached offer letter and confirm your acceptance within 5 business days.\n\nWe look forward to welcoming you to the team!\n\nWarm regards,\nHR Team'
+  );
+  const [rejectionTemplate, setRejectionTemplate] = useState(
+    'Dear {candidate_name},\n\nThank you for applying for the position of {position} and taking the time to interview with us.\n\nAfter careful consideration, we regret to inform you that we will not be moving forward with your application at this time. This was a difficult decision as we received many strong applications.\n\nWe appreciate your interest in our organization and wish you all the best in your future endeavors.\n\nKind regards,\nHR Team'
+  );
   const [previewTemplate, setPreviewTemplate] = useState(null);
 
   useEffect(() => {
-    // Demo user — replace with base44.auth.me() once real auth is set up
     const demoUser = { id: 'hr-1', full_name: 'HR Admin', email: 'hr@demo.com', role: 'hr' };
     setUser(demoUser);
     setProfileForm({ full_name: demoUser.full_name, phone: '', department: 'Human Resources' });
   }, []);
 
-  const handleProfileSave = async () => {
-    await base44.auth.updateMe({
-      phone: profileForm.phone,
-      department: profileForm.department,
-    });
+  const handleProfileSave = () => {
     toast.success('Profile updated');
   };
 
@@ -58,39 +57,21 @@ export default function HRSettings() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Full Name</Label>
-                    <Input value={profileForm.full_name} disabled className="bg-muted/50" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Email</Label>
-                    <Input value={user?.email || ''} disabled className="bg-muted/50" />
-                  </div>
+                  <div className="space-y-2"><Label>Full Name</Label><Input value={profileForm.full_name} disabled className="bg-muted/50" /></div>
+                  <div className="space-y-2"><Label>Email</Label><Input value={user?.email || ''} disabled className="bg-muted/50" /></div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Phone</Label>
-                    <Input value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Department</Label>
-                    <Input value={profileForm.department} onChange={(e) => setProfileForm({ ...profileForm, department: e.target.value })} />
-                  </div>
+                  <div className="space-y-2"><Label>Phone</Label><Input value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} /></div>
+                  <div className="space-y-2"><Label>Department</Label><Input value={profileForm.department} onChange={(e) => setProfileForm({ ...profileForm, department: e.target.value })} /></div>
                 </div>
                 <Button onClick={handleProfileSave}>Save Changes</Button>
               </CardContent>
             </Card>
-
             <Card className="shadow-sm">
               <CardHeader>
-                <CardTitle className="text-base font-heading flex items-center gap-2">
-                  <Lock className="w-4 h-4" />
-                  Change Password
-                </CardTitle>
+                <CardTitle className="text-base font-heading flex items-center gap-2"><Lock className="w-4 h-4" /> Change Password</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm text-muted-foreground">Use the forgot password flow from the login page to reset your password.</p>
-              </CardContent>
+              <CardContent><p className="text-sm text-muted-foreground">Use the forgot password flow from the login page to reset your password.</p></CardContent>
             </Card>
           </div>
         </TabsContent>
@@ -100,70 +81,57 @@ export default function HRSettings() {
             <Card className="shadow-sm">
               <CardHeader>
                 <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-base font-heading">Email Automation</CardTitle>
-                    <CardDescription>Toggle automated email notifications</CardDescription>
-                  </div>
+                  <div><CardTitle className="text-base font-heading">Email Automation</CardTitle><CardDescription>Toggle automated email notifications</CardDescription></div>
                   <Switch checked={emailAutoEnabled} onCheckedChange={setEmailAutoEnabled} />
                 </div>
               </CardHeader>
             </Card>
-
             <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-base font-heading">Interview Invitation (to Candidate)</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle className="text-base font-heading">Interview Invitation (to Candidate)</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <Textarea
-                  value={candidateEmailTemplate}
-                  onChange={(e) => setCandidateEmailTemplate(e.target.value)}
-                  rows={6}
-                  className="font-mono text-sm"
-                />
+                <Textarea value={candidateEmailTemplate} onChange={(e) => setCandidateEmailTemplate(e.target.value)} rows={6} className="font-mono text-sm" />
                 <div className="flex gap-3">
-                  <Button variant="outline" size="sm" className="gap-1" onClick={() => setPreviewTemplate(candidateEmailTemplate)}>
-                    <Eye className="w-3 h-3" />
-                    Preview
-                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1" onClick={() => setPreviewTemplate(candidateEmailTemplate)}><Eye className="w-3 h-3" /> Preview</Button>
                   <Button size="sm" onClick={() => toast.success('Template saved')}>Save Template</Button>
                 </div>
               </CardContent>
             </Card>
-
             <Card className="shadow-sm">
-              <CardHeader>
-                <CardTitle className="text-base font-heading">Assignment Notification (to Recruiter)</CardTitle>
-              </CardHeader>
+              <CardHeader><CardTitle className="text-base font-heading">Assignment Notification (to Recruiter)</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                <Textarea
-                  value={recruiterEmailTemplate}
-                  onChange={(e) => setRecruiterEmailTemplate(e.target.value)}
-                  rows={6}
-                  className="font-mono text-sm"
-                />
+                <Textarea value={recruiterEmailTemplate} onChange={(e) => setRecruiterEmailTemplate(e.target.value)} rows={6} className="font-mono text-sm" />
                 <div className="flex gap-3">
-                  <Button variant="outline" size="sm" className="gap-1" onClick={() => setPreviewTemplate(recruiterEmailTemplate)}>
-                    <Eye className="w-3 h-3" />
-                    Preview
-                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1" onClick={() => setPreviewTemplate(recruiterEmailTemplate)}><Eye className="w-3 h-3" /> Preview</Button>
                   <Button size="sm" onClick={() => toast.success('Template saved')}>Save Template</Button>
                 </div>
               </CardContent>
             </Card>
-
+            <Card className="shadow-sm">
+              <CardHeader><CardTitle className="text-base font-heading">Offer Letter (to Candidate)</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <Textarea value={offerLetterTemplate} onChange={(e) => setOfferLetterTemplate(e.target.value)} rows={8} className="font-mono text-sm" />
+                <div className="flex gap-3">
+                  <Button variant="outline" size="sm" className="gap-1" onClick={() => setPreviewTemplate(offerLetterTemplate)}><Eye className="w-3 h-3" /> Preview</Button>
+                  <Button size="sm" onClick={() => toast.success('Template saved')}>Save Template</Button>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm">
+              <CardHeader><CardTitle className="text-base font-heading">Rejection Mail (to Candidate)</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <Textarea value={rejectionTemplate} onChange={(e) => setRejectionTemplate(e.target.value)} rows={8} className="font-mono text-sm" />
+                <div className="flex gap-3">
+                  <Button variant="outline" size="sm" className="gap-1" onClick={() => setPreviewTemplate(rejectionTemplate)}><Eye className="w-3 h-3" /> Preview</Button>
+                  <Button size="sm" onClick={() => toast.success('Template saved')}>Save Template</Button>
+                </div>
+              </CardContent>
+            </Card>
             {previewTemplate && (
               <Card className="shadow-sm border-primary/20">
-                <CardHeader>
-                  <CardTitle className="text-base font-heading">Template Preview</CardTitle>
-                </CardHeader>
+                <CardHeader><CardTitle className="text-base font-heading">Template Preview</CardTitle></CardHeader>
                 <CardContent>
                   <div className="bg-muted/50 rounded-lg p-4 whitespace-pre-wrap text-sm">
-                    {previewTemplate
-                      .replace('{candidate_name}', 'John Doe')
-                      .replace('{recruiter_name}', 'Jane Smith')
-                      .replace('{position}', 'Software Engineer')
-                      .replace('{date}', 'Jan 15, 2025')
-                      .replace('{time}', '10:00 AM')}
+                    {previewTemplate.replace('{candidate_name}', 'John Doe').replace('{recruiter_name}', 'Jane Smith').replace('{position}', 'Software Engineer').replace('{date}', 'Jan 15, 2025').replace('{time}', '10:00 AM')}
                   </div>
                   <Button variant="outline" size="sm" className="mt-3" onClick={() => setPreviewTemplate(null)}>Close Preview</Button>
                 </CardContent>

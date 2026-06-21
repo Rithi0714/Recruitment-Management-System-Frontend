@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
 import PageHeader from '@/components/shared/PageHeader';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +9,6 @@ export default function RecruiterSettings() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    // Demo user — replace with base44.auth.me() once real auth is set up
     setUser({ id: 'recruiter-1', full_name: 'Jane Smith', email: 'recruiter@demo.com', role: 'recruiter', department: 'Talent Acquisition' });
   }, []);
 

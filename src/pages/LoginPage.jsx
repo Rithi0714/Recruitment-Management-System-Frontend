@@ -4,21 +4,22 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Briefcase, Eye, EyeOff, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Briefcase, Eye, EyeOff, AlertCircle, ArrowLeft, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('recruiter');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Dummy role map for demo login
-  const dummyUsers = {
-    'hr@demo.com': 'hr',
-    'recruiter@demo.com': 'recruiter',
-    'admin@demo.com': 'admin',
+  const roleRoutes = {
+    hr: '/hr/dashboard',
+    recruiter: '/recruiter/dashboard',
+    admin: '/admin/dashboard',
   };
 
   const handleLogin = async (e) => {
@@ -26,19 +27,10 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
-    // Dummy login: any password accepted, role determined by email
-    const role = dummyUsers[email.toLowerCase()];
-    if (role) {
-      setTimeout(() => {
-        if (role === 'hr') window.location.href = '/hr/dashboard';
-        else if (role === 'admin') window.location.href = '/admin/dashboard';
-        else window.location.href = '/recruiter/dashboard';
-      }, 500);
-      return;
-    }
-
-    setError('Use hr@demo.com, recruiter@demo.com, or admin@demo.com (any password).');
-    setLoading(false);
+    // Frontend-only login: accept any email/password, redirect based on selected role
+    setTimeout(() => {
+      window.location.href = roleRoutes[role] || '/recruiter/dashboard';
+    }, 500);
   };
 
   return (
@@ -118,6 +110,32 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Login As</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { value: 'hr', label: 'HR' },
+                  { value: 'recruiter', label: 'Recruiter' },
+                  { value: 'admin', label: 'Admin' },
+                ].map((r) => (
+                  <button
+                    key={r.value}
+                    type="button"
+                    onClick={() => setRole(r.value)}
+                    className={`flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg border text-sm font-medium transition-all ${
+                      role === r.value
+                        ? 'border-primary bg-primary/10 text-primary shadow-sm'
+                        : 'border-border hover:border-primary/40 hover:bg-muted/50 text-muted-foreground'
+                    }`}
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    {r.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <Button type="submit" className="w-full h-11 font-semibold" disabled={loading}>
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -125,13 +143,23 @@ export default function LoginPage() {
                 'Sign In'
               )}
             </Button>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  toast.info('Password reset link sent to your email (demo mode)');
+                }}
+                className="text-sm text-primary hover:underline"
+              >
+                Forgot your password?
+              </button>
+            </div>
           </form>
 
-          <div className="mt-8 p-4 bg-muted rounded-lg text-sm text-muted-foreground space-y-1">
-            <p className="font-medium text-foreground">Demo Credentials (any password):</p>
-            <p>👔 HR: <span className="font-mono">hr@demo.com</span></p>
-            <p>🔍 Recruiter: <span className="font-mono">recruiter@demo.com</span></p>
-            <p>🛡️ Admin: <span className="font-mono">admin@demo.com</span></p>
+          <div className="mt-8 p-4 bg-muted rounded-lg text-sm text-muted-foreground">
+            <p className="font-medium text-foreground">Frontend-Only Login</p>
+            <p className="mt-1">Enter any email and password to sign in. No backend connection required.</p>
           </div>
         </motion.div>
       </div>

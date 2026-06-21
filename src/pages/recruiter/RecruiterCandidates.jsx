@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -9,36 +7,20 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card } from '@/components/ui/card';
-import { Check, X, MessageSquare, Eye } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { dummyCandidates } from '@/lib/dummyData';
 
 export default function RecruiterCandidates() {
-  // Demo user — replace with base44.auth.me() once real auth is set up
   const currentUser = { id: 'recruiter-1', full_name: 'Jane Smith', role: 'recruiter' };
+  const [candidates, setCandidates] = useState(dummyCandidates);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [feedbackAction, setFeedbackAction] = useState('');
   const [feedback, setFeedback] = useState('');
-  const queryClient = useQueryClient();
 
-  const { data: candidates = [], isLoading } = useQuery({
-    queryKey: ['candidates'],
-    queryFn: () => base44.entities.Candidate.list('-created_date', 200),
-    enabled: !!currentUser,
-  });
-
-  const myCandidates = candidates.filter(c => c.assigned_recruiter_id === currentUser?.id);
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Candidate.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['candidates'] });
-      toast.success('Candidate status updated');
-      setShowFeedbackModal(false);
-      setFeedback('');
-    },
-  });
+  const myCandidates = candidates.filter(c => c.assigned_recruiter_id === currentUser.id);
 
   const openFeedbackModal = (candidate, action) => {
     setSelectedCandidate(candidate);
@@ -49,10 +31,12 @@ export default function RecruiterCandidates() {
 
   const submitDecision = () => {
     if (!selectedCandidate) return;
-    updateMutation.mutate({
-      id: selectedCandidate.id,
-      data: { status: feedbackAction, feedback },
-    });
+    setCandidates(prev => prev.map(c =>
+      c.id === selectedCandidate.id ? { ...c, status: feedbackAction, feedback: feedback || c.feedback } : c
+    ));
+    toast.success('Candidate status updated');
+    setShowFeedbackModal(false);
+    setFeedback('');
   };
 
   return (
@@ -73,9 +57,7 @@ export default function RecruiterCandidates() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-12 text-muted-foreground">Loading...</TableCell></TableRow>
-              ) : myCandidates.length === 0 ? (
+              {myCandidates.length === 0 ? (
                 <TableRow><TableCell colSpan={6} className="text-center py-12 text-muted-foreground">No candidates assigned to you</TableCell></TableRow>
               ) : (
                 myCandidates.map((c) => (
@@ -90,12 +72,10 @@ export default function RecruiterCandidates() {
                         {!['selected', 'rejected', 'hired'].includes(c.status) && (
                           <>
                             <Button variant="ghost" size="sm" className="gap-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => openFeedbackModal(c, 'selected')}>
-                              <Check className="w-4 h-4" />
-                              Select
+                              <Check className="w-4 h-4" /> Select
                             </Button>
                             <Button variant="ghost" size="sm" className="gap-1 text-destructive hover:bg-destructive/10" onClick={() => openFeedbackModal(c, 'rejected')}>
-                              <X className="w-4 h-4" />
-                              Reject
+                              <X className="w-4 h-4" /> Reject
                             </Button>
                           </>
                         )}
@@ -109,7 +89,6 @@ export default function RecruiterCandidates() {
         </div>
       </Card>
 
-      {/* Candidate Detail Modal */}
       <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -118,30 +97,12 @@ export default function RecruiterCandidates() {
           {selectedCandidate && (
             <div className="mt-2 space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-muted-foreground">Name</p>
-                  <p className="text-sm font-medium">{selectedCandidate.name}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Position</p>
-                  <p className="text-sm font-medium">{selectedCandidate.position}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Email</p>
-                  <p className="text-sm font-medium">{selectedCandidate.email}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Phone</p>
-                  <p className="text-sm font-medium">{selectedCandidate.phone || '—'}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Status</p>
-                  <StatusBadge status={selectedCandidate.status} />
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Skills</p>
-                  <p className="text-sm">{selectedCandidate.skills || '—'}</p>
-                </div>
+                <div><p className="text-xs text-muted-foreground">Name</p><p className="text-sm font-medium">{selectedCandidate.name}</p></div>
+                <div><p className="text-xs text-muted-foreground">Position</p><p className="text-sm font-medium">{selectedCandidate.position}</p></div>
+                <div><p className="text-xs text-muted-foreground">Email</p><p className="text-sm font-medium">{selectedCandidate.email}</p></div>
+                <div><p className="text-xs text-muted-foreground">Phone</p><p className="text-sm font-medium">{selectedCandidate.phone || '—'}</p></div>
+                <div><p className="text-xs text-muted-foreground">Status</p><StatusBadge status={selectedCandidate.status} /></div>
+                <div><p className="text-xs text-muted-foreground">Skills</p><p className="text-sm">{selectedCandidate.skills || '—'}</p></div>
               </div>
               {selectedCandidate.feedback && (
                 <div className="bg-muted/50 rounded-lg p-3">
@@ -149,17 +110,11 @@ export default function RecruiterCandidates() {
                   <p className="text-sm">{selectedCandidate.feedback}</p>
                 </div>
               )}
-              {selectedCandidate.resume_url && (
-                <a href={selectedCandidate.resume_url} target="_blank" rel="noopener noreferrer" className="text-primary text-sm hover:underline">
-                  View Resume
-                </a>
-              )}
             </div>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* Feedback Modal */}
       <Dialog open={showFeedbackModal} onOpenChange={setShowFeedbackModal}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -170,20 +125,11 @@ export default function RecruiterCandidates() {
           <div className="mt-2 space-y-4">
             <div className="space-y-2">
               <Label>Feedback Notes</Label>
-              <Textarea
-                value={feedback}
-                onChange={(e) => setFeedback(e.target.value)}
-                placeholder="Add your feedback..."
-                rows={4}
-              />
+              <Textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Add your feedback..." rows={4} />
             </div>
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={() => setShowFeedbackModal(false)}>Cancel</Button>
-              <Button
-                onClick={submitDecision}
-                disabled={updateMutation.isPending}
-                className={feedbackAction === 'selected' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-destructive hover:bg-destructive/90'}
-              >
+              <Button onClick={submitDecision} className={feedbackAction === 'selected' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-destructive hover:bg-destructive/90'}>
                 {feedbackAction === 'selected' ? 'Confirm Select' : 'Confirm Reject'}
               </Button>
             </div>

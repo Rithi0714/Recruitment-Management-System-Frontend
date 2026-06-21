@@ -1,20 +1,15 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Card } from '@/components/ui/card';
 import { Search } from 'lucide-react';
+import { dummyCandidates } from '@/lib/dummyData';
 
 export default function AdminCandidates() {
   const [search, setSearch] = useState('');
-
-  const { data: candidates = [], isLoading } = useQuery({
-    queryKey: ['candidates'],
-    queryFn: () => base44.entities.Candidate.list('-created_date', 500),
-  });
+  const candidates = dummyCandidates;
 
   const filtered = candidates.filter(c =>
     c.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -24,7 +19,6 @@ export default function AdminCandidates() {
   return (
     <div>
       <PageHeader title="All Candidates" subtitle="Read-only view of all candidates in the system" />
-
       <Card className="shadow-sm">
         <div className="p-4 border-b border-border/50">
           <div className="relative max-w-sm">
@@ -36,17 +30,12 @@ export default function AdminCandidates() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Position</TableHead>
-                <TableHead>Recruiter</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Name</TableHead><TableHead>Email</TableHead><TableHead>Position</TableHead>
+                <TableHead>Recruiter</TableHead><TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground">Loading...</TableCell></TableRow>
-              ) : filtered.length === 0 ? (
+              {filtered.length === 0 ? (
                 <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground">No candidates found</TableCell></TableRow>
               ) : (
                 filtered.map(c => (

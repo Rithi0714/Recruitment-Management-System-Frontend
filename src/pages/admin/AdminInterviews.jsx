@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { Input } from '@/components/ui/input';
@@ -8,14 +6,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card } from '@/components/ui/card';
 import { Search, Video, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
+import { dummyInterviews } from '@/lib/dummyData';
 
 export default function AdminInterviews() {
   const [search, setSearch] = useState('');
-
-  const { data: interviews = [], isLoading } = useQuery({
-    queryKey: ['interviews'],
-    queryFn: () => base44.entities.Interview.list('-created_date', 500),
-  });
+  const interviews = dummyInterviews;
 
   const filtered = interviews.filter(i =>
     i.candidate_name?.toLowerCase().includes(search.toLowerCase())
@@ -24,7 +19,6 @@ export default function AdminInterviews() {
   return (
     <div>
       <PageHeader title="All Interviews" subtitle="Read-only view of all interviews" />
-
       <Card className="shadow-sm">
         <div className="p-4 border-b border-border/50">
           <div className="relative max-w-sm">
@@ -36,19 +30,12 @@ export default function AdminInterviews() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Candidate</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Time</TableHead>
-                <TableHead>Recruiter</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Mode</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Candidate</TableHead><TableHead>Date</TableHead><TableHead>Time</TableHead>
+                <TableHead>Recruiter</TableHead><TableHead>Type</TableHead><TableHead>Mode</TableHead><TableHead>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">Loading...</TableCell></TableRow>
-              ) : filtered.length === 0 ? (
+              {filtered.length === 0 ? (
                 <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground">No interviews found</TableCell></TableRow>
               ) : (
                 filtered.map(i => (

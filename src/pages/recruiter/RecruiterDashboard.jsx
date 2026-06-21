@@ -1,31 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import React from 'react';
 import StatCard from '@/components/shared/StatCard';
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { Users, Calendar, CheckCircle, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
+import { dummyCandidates, dummyInterviews } from '@/lib/dummyData';
 
 export default function RecruiterDashboard() {
-  // Demo user — replace with base44.auth.me() once real auth is set up
-  const [currentUser] = useState({ id: 'recruiter-1', full_name: 'Jane Smith', role: 'recruiter' });
+  const currentUser = { id: 'recruiter-1', full_name: 'Jane Smith', role: 'recruiter' };
+  const candidates = dummyCandidates;
+  const interviews = dummyInterviews;
 
-  const { data: candidates = [] } = useQuery({
-    queryKey: ['candidates'],
-    queryFn: () => base44.entities.Candidate.list('-created_date', 200),
-    enabled: !!currentUser,
-  });
-
-  const { data: interviews = [] } = useQuery({
-    queryKey: ['interviews'],
-    queryFn: () => base44.entities.Interview.list('-created_date', 200),
-    enabled: !!currentUser,
-  });
-
-  const myCandidates = candidates.filter(c => c.assigned_recruiter_id === currentUser?.id);
-  const myInterviews = interviews.filter(i => i.recruiter_id === currentUser?.id);
+  const myCandidates = candidates.filter(c => c.assigned_recruiter_id === currentUser.id);
+  const myInterviews = interviews.filter(i => i.recruiter_id === currentUser.id);
   const scheduledCount = myInterviews.filter(i => i.status === 'scheduled').length;
   const completedCount = myInterviews.filter(i => i.status === 'completed').length;
 
@@ -35,7 +23,7 @@ export default function RecruiterDashboard() {
 
   return (
     <div>
-      <PageHeader title="Dashboard" subtitle={`Welcome back, ${currentUser?.full_name || 'Recruiter'}`} />
+      <PageHeader title="Dashboard" subtitle={`Welcome back, ${currentUser.full_name || 'Recruiter'}`} />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         <StatCard title="My Candidates" value={myCandidates.length} icon={Users} color="primary" />

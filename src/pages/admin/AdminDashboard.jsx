@@ -1,35 +1,26 @@
-import React from 'react';
-import { base44 } from '@/api/base44Client';
-import { useQuery } from '@tanstack/react-query';
+import React, { useMemo } from 'react';
 import StatCard from '@/components/shared/StatCard';
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
-import { Users, Calendar, UserCheck, UserX, Briefcase, BarChart3 } from 'lucide-react';
+import { Users, Calendar, Briefcase, UserCheck, BarChart3 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { dummyCandidates, dummyInterviews, dummyUsers } from '@/lib/dummyData';
 
-const COLORS = ['hsl(225,73%,57%)', 'hsl(38,92%,50%)', 'hsl(152,69%,40%)', 'hsl(0,84%,60%)', 'hsl(280,65%,60%)', 'hsl(160,60%,45%)'];
+const STATUS_COLORS = {
+  'applied': '#3B82F6', 'in review': '#F59E0B', 'shortlisted': '#8B5CF6',
+  'interview scheduled': '#6366F1', 'interview completed': '#06B6D4',
+  'selected': '#10B981', 'rejected': '#EF4444', 'offer sent': '#A855F7', 'hired': '#22C55E',
+};
 
 export default function AdminDashboard() {
-  const { data: candidates = [] } = useQuery({
-    queryKey: ['candidates'],
-    queryFn: () => base44.entities.Candidate.list('-created_date', 500),
-  });
-
-  const { data: interviews = [] } = useQuery({
-    queryKey: ['interviews'],
-    queryFn: () => base44.entities.Interview.list('-created_date', 500),
-  });
-
-  const { data: users = [] } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => base44.entities.User.list(),
-  });
+  const candidates = dummyCandidates;
+  const interviews = dummyInterviews;
+  const users = dummyUsers;
 
   const recruiters = users.filter(u => u.role === 'recruiter');
   const hrUsers = users.filter(u => u.role === 'hr');
 
-  const statusCounts = React.useMemo(() => {
+  const statusCounts = useMemo(() => {
     const counts = {};
     candidates.forEach(c => {
       const label = (c.status || 'applied').replace(/_/g, ' ');
@@ -53,23 +44,29 @@ export default function AdminDashboard() {
         <Card className="shadow-sm">
           <CardHeader>
             <CardTitle className="text-base font-heading flex items-center gap-2">
-              <BarChart3 className="w-4 h-4 text-primary" />
-              Candidate Status Distribution
+              <BarChart3 className="w-4 h-4 text-primary" /> Candidate Status Distribution
             </CardTitle>
           </CardHeader>
           <CardContent>
             {statusCounts.length > 0 ? (
-              <ResponsiveContainer width="100%" height={280}>
-                <PieChart>
-                  <Pie data={statusCounts} cx="50%" cy="50%" outerRadius={100} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
-                    {statusCounts.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="space-y-2">
+                {[...statusCounts].sort((a, b) => b.value - a.value).map((item) => {
+                  const maxVal = Math.max(...statusCounts.map(d => d.value), 1);
+                  const pct = Math.round((item.value / maxVal) * 100);
+                  return (
+                    <div key={item.name} className="flex items-center gap-3">
+                      <span className="w-32 text-sm capitalize text-muted-foreground truncate shrink-0">{item.name}</span>
+                      <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{ width: `${pct}%`, backgroundColor: STATUS_COLORS[item.name] || '#6B7280' }}
+                        />
+                      </div>
+                      <span className="text-sm font-semibold w-6 text-right shrink-0">{item.value}</span>
+                    </div>
+                  );
+                })}
+              </div>
             ) : (
               <div className="h-[280px] flex items-center justify-center text-muted-foreground text-sm">No data</div>
             )}
@@ -77,17 +74,12 @@ export default function AdminDashboard() {
         </Card>
 
         <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-base font-heading">Recent Candidates</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle className="text-base font-heading">Recent Candidates</CardTitle></CardHeader>
           <CardContent>
             <div className="space-y-3">
               {candidates.slice(0, 8).map(c => (
                 <div key={c.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                  <div>
-                    <p className="text-sm font-medium">{c.name}</p>
-                    <p className="text-xs text-muted-foreground">{c.position} · {c.assigned_recruiter_name || 'Unassigned'}</p>
-                  </div>
+                  <div><p className="text-sm font-medium">{c.name}</p><p className="text-xs text-muted-foreground">{c.position} · {c.assigned_recruiter_name || 'Unassigned'}</p></div>
                   <StatusBadge status={c.status} />
                 </div>
               ))}
