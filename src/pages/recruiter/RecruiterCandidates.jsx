@@ -9,18 +9,48 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card } from '@/components/ui/card';
 import { Check, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { dummyCandidates } from '@/lib/dummyData';
+import { useEffect } from 'react';
+import api from '@/api/api';
 
 export default function RecruiterCandidates() {
-  const currentUser = { id: 'recruiter-1', full_name: 'Jane Smith', role: 'recruiter' };
-  const [candidates, setCandidates] = useState(dummyCandidates);
+ // Temporary recruiter id
+// Later this will come from login JWT
+
+const recruiterId = 6;
+ const [candidates, setCandidates] = useState([]);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [feedbackAction, setFeedbackAction] = useState('');
   const [feedback, setFeedback] = useState('');
 
-  const myCandidates = candidates.filter(c => c.assigned_recruiter_id === currentUser.id);
+  useEffect(() => {
+
+    loadCandidates();
+
+}, []);
+
+const loadCandidates = async () => {
+
+    try {
+
+        const response = await api.get(
+            `/candidates/recruiter/${recruiterId}`
+        );
+
+        setCandidates(response.data);
+
+    } catch (error) {
+
+        console.error(error);
+
+        toast.error("Failed to load candidates");
+
+    }
+
+};
+
+  const myCandidates = candidates;
 
   const openFeedbackModal = (candidate, action) => {
     setSelectedCandidate(candidate);
@@ -29,15 +59,39 @@ export default function RecruiterCandidates() {
     setShowFeedbackModal(true);
   };
 
-  const submitDecision = () => {
+  const submitDecision = async () => {
+
     if (!selectedCandidate) return;
-    setCandidates(prev => prev.map(c =>
-      c.id === selectedCandidate.id ? { ...c, status: feedbackAction, feedback: feedback || c.feedback } : c
-    ));
-    toast.success('Candidate status updated');
-    setShowFeedbackModal(false);
-    setFeedback('');
-  };
+
+    try {
+
+        await api.patch(
+            `/candidates/${selectedCandidate.id}/status`,
+            null,
+            {
+                params: {
+                    status: feedbackAction.toUpperCase()
+                }
+            }
+        );
+
+        toast.success("Candidate status updated");
+
+        loadCandidates();
+
+        setShowFeedbackModal(false);
+
+        setFeedback("");
+
+    } catch (error) {
+
+        console.error(error);
+
+        toast.error("Failed to update candidate");
+
+    }
+
+};
 
   return (
     <div>
@@ -69,12 +123,12 @@ export default function RecruiterCandidates() {
                     <TableCell><StatusBadge status={c.status} /></TableCell>
                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center justify-end gap-1">
-                        {!['selected', 'rejected', 'hired'].includes(c.status) && (
+                        {!['SELECTED', 'REJECTED', 'HIRED'].includes(c.status) && (
                           <>
-                            <Button variant="ghost" size="sm" className="gap-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => openFeedbackModal(c, 'selected')}>
+                            <Button variant="ghost" size="sm" className="gap-1 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50" onClick={() => openFeedbackModal(c, 'SELECTED')}>
                               <Check className="w-4 h-4" /> Select
                             </Button>
-                            <Button variant="ghost" size="sm" className="gap-1 text-destructive hover:bg-destructive/10" onClick={() => openFeedbackModal(c, 'rejected')}>
+                            <Button variant="ghost" size="sm" className="gap-1 text-destructive hover:bg-destructive/10" onClick={() => openFeedbackModal(c, 'REJECTED')}>
                               <X className="w-4 h-4" /> Reject
                             </Button>
                           </>
@@ -119,7 +173,7 @@ export default function RecruiterCandidates() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle className="font-heading">
-              {feedbackAction === 'selected' ? 'Select' : 'Reject'} {selectedCandidate?.name}?
+              {feedbackAction === 'SELECTED' ? 'Select' : 'Reject'} {selectedCandidate?.name}?
             </DialogTitle>
           </DialogHeader>
           <div className="mt-2 space-y-4">
@@ -129,8 +183,8 @@ export default function RecruiterCandidates() {
             </div>
             <div className="flex justify-end gap-3">
               <Button variant="outline" onClick={() => setShowFeedbackModal(false)}>Cancel</Button>
-              <Button onClick={submitDecision} className={feedbackAction === 'selected' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-destructive hover:bg-destructive/90'}>
-                {feedbackAction === 'selected' ? 'Confirm Select' : 'Confirm Reject'}
+              <Button onClick={submitDecision} className={feedbackAction === 'SELECTED' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-destructive hover:bg-destructive/90'}>
+                {feedbackAction === 'SELECTED' ? 'Confirm Select' : 'Confirm Reject'}
               </Button>
             </div>
           </div>

@@ -4,26 +4,84 @@ import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { Users, Calendar, CheckCircle, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { format } from 'date-fns';
-import { dummyCandidates, dummyInterviews } from '@/lib/dummyData';
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { format } from "date-fns";
 
 export default function RecruiterDashboard() {
-  const currentUser = { id: 'recruiter-1', full_name: 'Jane Smith', role: 'recruiter' };
-  const candidates = dummyCandidates;
-  const interviews = dummyInterviews;
+const recruiterId = 6;
 
-  const myCandidates = candidates.filter(c => c.assigned_recruiter_id === currentUser.id);
-  const myInterviews = interviews.filter(i => i.recruiter_id === currentUser.id);
-  const scheduledCount = myInterviews.filter(i => i.status === 'scheduled').length;
-  const completedCount = myInterviews.filter(i => i.status === 'completed').length;
+const [myCandidates, setMyCandidates] = useState([]);
+const [myInterviews, setMyInterviews] = useState([]);
 
-  const today = format(new Date(), 'yyyy-MM-dd');
-  const todaysInterviews = myInterviews.filter(i => i.interview_date === today && i.status === 'scheduled');
+useEffect(() => {
+
+    loadCandidates();
+    loadInterviews();
+
+}, []);
+  
+const loadCandidates = async () => {
+
+    try {
+
+        const res = await axios.get(
+            `http://localhost:8080/api/recruiters/${recruiterId}/candidates`
+        );
+
+        setMyCandidates(res.data);
+
+    } catch (err) {
+
+        console.log(err);
+
+    }
+
+};
+
+const loadInterviews = async () => {
+
+    try {
+
+        const res = await axios.get(
+            `http://localhost:8080/api/interviews/recruiter/${recruiterId}`
+        );
+
+        setMyInterviews(res.data);
+        console.log(res.data);
+    } catch (err) {
+
+        console.log(err);
+
+    }
+
+};
+
+  const scheduledCount = myInterviews.filter(i => i.status === 'Scheduled').length;
+  const completedCount = myInterviews.filter(i => i.status === 'Completed').length;
+
+const today = format(new Date(), "yyyy-MM-dd");
+
+const todaysInterviews = myInterviews.filter((i) => {
+
+    const interviewDate = format(
+        new Date(i.interviewDateTime),
+        "yyyy-MM-dd"
+    );
+
+    return (
+        interviewDate === today &&
+        i.status === "Scheduled"
+    );
+
+});
   const recentCandidates = myCandidates.slice(0, 5);
 
   return (
     <div>
-      <PageHeader title="Dashboard" subtitle={`Welcome back, ${currentUser.full_name || 'Recruiter'}`} />
+      <PageHeader
+    title="Dashboard"
+    subtitle="Welcome back, Recruiter"/>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
         <StatCard title="My Candidates" value={myCandidates.length} icon={Users} color="primary" />
@@ -45,9 +103,18 @@ export default function RecruiterDashboard() {
                 {todaysInterviews.map(i => (
                   <div key={i.id} className="flex items-center justify-between py-3 border-b border-border/50 last:border-0">
                     <div>
-                      <p className="text-sm font-medium">{i.candidate_name}</p>
-                      <p className="text-xs text-muted-foreground">{i.interview_time} · {i.interview_type} · {i.mode}</p>
-                    </div>
+    <p className="text-sm font-medium">
+        {i.candidateName}
+    </p>
+
+    <p className="text-xs text-muted-foreground">
+        {format(new Date(i.interviewDateTime), "hh:mm a")}
+        {" · "}
+        {i.interviewType}
+        {" · "}
+        {i.interviewMode}
+    </p>
+</div>
                     <StatusBadge status={i.status} />
                   </div>
                 ))}

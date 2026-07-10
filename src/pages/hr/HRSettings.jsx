@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { User, Lock, Mail, Eye } from 'lucide-react';
 import { toast } from 'sonner';
+import api from "@/api/api";
 
 export default function HRSettings() {
   const [user, setUser] = useState(null);
@@ -28,15 +29,112 @@ export default function HRSettings() {
   );
   const [previewTemplate, setPreviewTemplate] = useState(null);
 
-  useEffect(() => {
-    const demoUser = { id: 'hr-1', full_name: 'HR Admin', email: 'hr@demo.com', role: 'hr' };
+ useEffect(() => {
+
+  const loadSettings = async () => {
+
+    // Demo user (temporary)
+    const demoUser = {
+      id: "hr-1",
+      full_name: "HR Admin",
+      email: "hr@demo.com",
+      role: "hr"
+    };
+
     setUser(demoUser);
-    setProfileForm({ full_name: demoUser.full_name, phone: '', department: 'Human Resources' });
-  }, []);
+
+    setProfileForm({
+      full_name: demoUser.full_name,
+      phone: "",
+      department: "Human Resources"
+    });
+
+    try {
+
+      // Load automation switch
+      const automationResponse = await api.get(
+        "/settings/email/automation"
+      );
+
+      setEmailAutoEnabled(
+        automationResponse.data.emailAutomationEnabled
+      );
+
+      // Load email templates
+      const templatesResponse = await api.get(
+        "/settings/email/templates"
+      );
+
+     const templates = templatesResponse.data;
+
+console.log("Templates:", templates);
+
+templates.forEach((template) => {
+
+  switch (template.templateKey) {
+
+    case "INTERVIEW_INVITATION":
+      setCandidateEmailTemplate(template.body);
+      break;
+
+    case "ASSIGNMENT_NOTIFICATION":
+      setRecruiterEmailTemplate(template.body);
+      break;
+
+    case "OFFER_LETTER":
+      setOfferLetterTemplate(template.body);
+      break;
+
+    case "REJECTION_MAIL":
+      setRejectionTemplate(template.body);
+      break;
+
+    default:
+      break;
+  }
+
+});
+
+    } catch (error) {
+
+      console.error(error);
+
+      toast.error("Failed to load email settings");
+
+    }
+
+  };
+
+  loadSettings();
+
+}, []);
 
   const handleProfileSave = () => {
     toast.success('Profile updated');
   };
+const saveTemplate = async (templateKey, subject, body) => {
+
+  try {
+
+    await api.put(
+      `/settings/email/templates/${templateKey}`,
+      {
+        subject,
+        body
+      }
+    );
+
+    toast.success("Template saved successfully");
+
+  } catch (error) {
+
+    console.error(error);
+
+    toast.error("Failed to save template");
+
+  }
+
+};
 
   return (
     <div>
@@ -92,7 +190,12 @@ export default function HRSettings() {
                 <Textarea value={candidateEmailTemplate} onChange={(e) => setCandidateEmailTemplate(e.target.value)} rows={6} className="font-mono text-sm" />
                 <div className="flex gap-3">
                   <Button variant="outline" size="sm" className="gap-1" onClick={() => setPreviewTemplate(candidateEmailTemplate)}><Eye className="w-3 h-3" /> Preview</Button>
-                  <Button size="sm" onClick={() => toast.success('Template saved')}>Save Template</Button>
+                  <Button  size="sm" onClick={() => saveTemplate(
+                  "INTERVIEW_INVITATION",
+                  "Interview Invitation",
+                   candidateEmailTemplate)}>
+                   Save Template
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -102,7 +205,18 @@ export default function HRSettings() {
                 <Textarea value={recruiterEmailTemplate} onChange={(e) => setRecruiterEmailTemplate(e.target.value)} rows={6} className="font-mono text-sm" />
                 <div className="flex gap-3">
                   <Button variant="outline" size="sm" className="gap-1" onClick={() => setPreviewTemplate(recruiterEmailTemplate)}><Eye className="w-3 h-3" /> Preview</Button>
-                  <Button size="sm" onClick={() => toast.success('Template saved')}>Save Template</Button>
+                  <Button
+  size="sm"
+  onClick={() =>
+    saveTemplate(
+      "ASSIGNMENT_NOTIFICATION",
+      "New Candidate Assigned",
+      recruiterEmailTemplate
+    )
+  }
+>
+  Save Template
+</Button>
                 </div>
               </CardContent>
             </Card>
@@ -112,7 +226,18 @@ export default function HRSettings() {
                 <Textarea value={offerLetterTemplate} onChange={(e) => setOfferLetterTemplate(e.target.value)} rows={8} className="font-mono text-sm" />
                 <div className="flex gap-3">
                   <Button variant="outline" size="sm" className="gap-1" onClick={() => setPreviewTemplate(offerLetterTemplate)}><Eye className="w-3 h-3" /> Preview</Button>
-                  <Button size="sm" onClick={() => toast.success('Template saved')}>Save Template</Button>
+                  <Button
+  size="sm"
+  onClick={() =>
+    saveTemplate(
+      "OFFER_LETTER",
+      "Congratulations!",
+      offerLetterTemplate
+    )
+  }
+>
+  Save Template
+</Button>
                 </div>
               </CardContent>
             </Card>
@@ -122,7 +247,18 @@ export default function HRSettings() {
                 <Textarea value={rejectionTemplate} onChange={(e) => setRejectionTemplate(e.target.value)} rows={8} className="font-mono text-sm" />
                 <div className="flex gap-3">
                   <Button variant="outline" size="sm" className="gap-1" onClick={() => setPreviewTemplate(rejectionTemplate)}><Eye className="w-3 h-3" /> Preview</Button>
-                  <Button size="sm" onClick={() => toast.success('Template saved')}>Save Template</Button>
+                  <Button
+  size="sm"
+  onClick={() =>
+    saveTemplate(
+      "REJECTION_MAIL",
+      "Application Update",
+      rejectionTemplate
+    )
+  }
+>
+  Save Template
+</Button>
                 </div>
               </CardContent>
             </Card>

@@ -1,6 +1,6 @@
-import React from 'react';
-import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
+import React from "react";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 const statusStyles = {
   applied: "bg-blue-50 text-blue-700 border-blue-200",
@@ -41,9 +41,19 @@ const statusLabels = {
 };
 
 export default function StatusBadge({ status }) {
+  const key = status ? status.toLowerCase() : "";
+
+  console.log("StatusBadge:", status, key);
+
   return (
-    <Badge variant="outline" className={cn("font-medium border", statusStyles[status] || "bg-gray-50 text-gray-700")}>
-      {statusLabels[status] || status}
+    <Badge
+      variant="outline"
+      className={cn(
+        "font-medium border",
+        statusStyles[key] || "bg-gray-50 text-gray-700"
+      )}
+    >
+      {statusLabels[key] || status}
     </Badge>
   );
 }

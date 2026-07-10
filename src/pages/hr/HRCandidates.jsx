@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { Button } from '@/components/ui/button';
@@ -11,12 +11,33 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Card } from '@/components/ui/card';
 import { Plus, Search, Pencil, Trash2, Download } from 'lucide-react';
 import { toast } from 'sonner';
-import { dummyCandidates } from '@/lib/dummyData';
+import api from "@/api/api";
 
-const emptyCandidate = { name: '', email: '', phone: '', position: '', source: 'linkedin', skills: '', status: 'applied', resume_url: null };
+const emptyCandidate = {
+  name: '',
+  email: '',
+  phone: '',
+  position: '',
+  source: 'linkedin',
+  skills: '',
+  status: 'applied',
+  resumeUrl: null
+};
 
 export default function HRCandidates() {
-  const [candidates, setCandidates] = useState(dummyCandidates);
+  const [candidates, setCandidates] = useState([]);
+  useEffect(() => {
+    fetchCandidates();
+}, []);
+
+const fetchCandidates = async () => {
+    try {
+        const response = await api.get("/candidates");
+        setCandidates(response.data);
+    } catch (error) {
+        console.error(error);
+    }
+};
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingCandidate, setEditingCandidate] = useState(null);
@@ -34,29 +55,98 @@ export default function HRCandidates() {
     setForm({
       name: candidate.name || '', email: candidate.email || '', phone: candidate.phone || '',
       position: candidate.position || '', source: candidate.source || 'linkedin',
-      skills: candidate.skills || '', status: candidate.status || 'applied', resume_url: candidate.resume_url || null,
+      skills: candidate.skills || '', status: candidate.status || 'applied', resumeUrl: candidate.resumeUrl || null,
     });
     setShowModal(true);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (editingCandidate) {
-      setCandidates(prev => prev.map(c => c.id === editingCandidate.id ? { ...c, ...form } : c));
-      toast.success('Candidate updated');
-    } else {
-      const newCandidate = { ...form, id: 'c' + Date.now(), assigned_recruiter_id: null, assigned_recruiter_name: null, feedback: null, resume_url: null };
-      setCandidates(prev => [newCandidate, ...prev]);
-      toast.success('Candidate added successfully');
-    }
-    closeModal();
-  };
+  const handleSubmit = async (e) => {
+  e.preventDefault();
 
-  const handleDelete = () => {
-    setCandidates(prev => prev.filter(c => c.id !== deleteId));
-    toast.success('Candidate deleted');
+  try {
+
+    const candidateData = {
+      name: form.name,
+      email: form.email,
+      phone: form.phone,
+      position: form.position,
+      source: form.source,
+      skills: form.skills
+    };
+
+    if (editingCandidate) {
+
+      await api.put(
+        `/candidates/${editingCandidate.id}`,
+        candidateData
+      );
+
+      toast.success("Candidate updated successfully");
+
+    } else {
+
+  const response = await api.post(
+    "/candidates",
+    candidateData
+  );
+
+  // Upload resume if selected
+  if (form.resumeFile) {
+
+    const formData = new FormData();
+
+    formData.append("file", form.resumeFile);
+
+    await api.post(
+      `/candidates/${response.data.id}/resume`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data"
+        }
+      }
+    );
+  }
+
+  toast.success("Candidate added successfully");
+}
+
+    // Reload latest data from backend
+    fetchCandidates();
+
+    closeModal();
+
+  } catch (error) {
+
+    console.error(error);
+
+    toast.error(
+      error.response?.data?.message ||
+      "Operation failed"
+    );
+  }
+};
+
+ const handleDelete = async () => {
+
+  try {
+
+    await api.delete(`/candidates/${deleteId}`);
+
+    toast.success("Candidate deleted successfully");
+
+    fetchCandidates();
+
     setDeleteId(null);
-  };
+
+  } catch (error) {
+
+    console.error(error);
+
+    toast.error("Failed to delete candidate");
+
+  }
+};
 
   const filtered = candidates.filter(c =>
     c.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -102,7 +192,19 @@ export default function HRCandidates() {
                     <TableCell>{c.email}</TableCell>
                     <TableCell>{c.position}</TableCell>
                     <TableCell><StatusBadge status={c.status} /></TableCell>
-                    <TableCell>{c.resume_url ? <a href={c.resume_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:text-primary/80"><Download className="w-4 h-4" /></a> : '—'}</TableCell>
+                    <TableCell>
+                    {c.resumeUrl ? (
+                     <a
+                     href={`http://localhost:8080/resumes/${c.resumeUrl.split("\\").pop()}`}
+                     target="_blank"
+                     rel="noopener noreferrer"
+                      >
+                      <Download className="w-4 h-4 text-blue-600" />
+                      </a>
+                     ) : (
+                     "—"
+                     )}
+                   </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="icon" onClick={() => openEdit(c)}><Pencil className="w-4 h-4" /></Button>
@@ -146,13 +248,17 @@ export default function HRCandidates() {
                 type="file"
                 accept=".pdf,.doc,.docx"
                 onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    const url = URL.createObjectURL(file);
-                    setForm({ ...form, resume_url: url });
-                    toast.success(`Resume "${file.name}" attached`);
-                  }
-                }}
+                const file = e.target.files?.[0];
+
+                 if (file) {
+                setForm({
+                 ...form,
+                resumeFile: file
+                 });
+
+                toast.success(`Resume "${file.name}" attached`);
+                }
+               }}
               />
               {form.resume_url && (
                 <p className="text-xs text-emerald-600">✓ Resume attached</p>

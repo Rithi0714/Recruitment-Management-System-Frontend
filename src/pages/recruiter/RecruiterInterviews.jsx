@@ -10,16 +10,33 @@ import { Card } from '@/components/ui/card';
 import { CheckCircle, Video, MapPin, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
-import { dummyInterviews } from '@/lib/dummyData';
+import { useEffect } from "react";
+import api from "@/api/api";
 
 export default function RecruiterInterviews() {
   const currentUser = { id: 'recruiter-1', full_name: 'Jane Smith', role: 'recruiter' };
-  const [interviews, setInterviews] = useState(dummyInterviews);
+  const [interviews, setInterviews] = useState([]);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [selectedInterview, setSelectedInterview] = useState(null);
   const [feedback, setFeedback] = useState('');
 
-  const myInterviews = interviews.filter(i => i.recruiter_id === currentUser.id);
+  useEffect(() => {
+  fetchInterviews();
+}, []);
+
+ const myInterviews = interviews;
+
+const fetchInterviews = async () => {
+  try {
+    const response = await api.get("/interviews/recruiter/6");
+
+    setInterviews(response.data);
+
+  } catch (error) {
+    console.error(error);
+    toast.error("Failed to load interviews");
+  }
+};
 
   const markComplete = (interview) => {
     setSelectedInterview(interview);
@@ -27,14 +44,30 @@ export default function RecruiterInterviews() {
     setShowFeedbackModal(true);
   };
 
-  const submitFeedback = () => {
-    if (!selectedInterview) return;
-    setInterviews(prev => prev.map(i =>
-      i.id === selectedInterview.id ? { ...i, status: 'completed', feedback: feedback || i.feedback } : i
-    ));
-    toast.success('Interview updated');
+ const submitFeedback = async () => {
+  try {
+    await api.patch(
+      `/interviews/${selectedInterview.interviewId}/complete`,
+      null,
+      {
+        params: {
+          feedback: feedback
+        }
+      }
+    );
+
+    toast.success("Interview marked as completed");
+
     setShowFeedbackModal(false);
-  };
+
+    // Reload interviews
+    fetchInterviews();
+
+  } catch (error) {
+    console.error(error);
+    toast.error("Failed to update interview");
+  }
+};
 
   return (
     <div>
@@ -60,27 +93,27 @@ export default function RecruiterInterviews() {
               ) : (
                 myInterviews.map((i) => (
                   <TableRow key={i.id} className="hover:bg-muted/50">
-                    <TableCell className="font-medium">{i.candidate_name}</TableCell>
-                    <TableCell>{i.interview_date && format(new Date(i.interview_date), 'MMM d, yyyy')}</TableCell>
-                    <TableCell>{i.interview_time || '—'}</TableCell>
-                    <TableCell className="capitalize">{i.interview_type}</TableCell>
+                    <TableCell className="font-medium">{i.candidateName}</TableCell>
+                    <TableCell>{format(new Date(i.interviewDateTime), "MMM d, yyyy")}</TableCell>
+                    <TableCell>{format(new Date(i.interviewDateTime), "hh:mm a")}</TableCell>
+                    <TableCell className="capitalize">{i.interviewType}</TableCell>
                     <TableCell>
                       <span className="inline-flex items-center gap-1 text-sm">
-                        {i.mode === 'online' ? <Video className="w-3 h-3" /> : <MapPin className="w-3 h-3" />}
-                        <span className="capitalize">{i.mode}</span>
+                        {i.interviewMode?.toLowerCase() === "online" ? <Video className="w-3 h-3" /> : <MapPin className="w-3 h-3" />}
+                        <span className="capitalize">{i.interviewMode}</span>
                       </span>
                     </TableCell>
                     <TableCell><StatusBadge status={i.status} /></TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        {i.mode === 'online' && i.meeting_link && (
-                          <a href={i.meeting_link} target="_blank" rel="noopener noreferrer">
+                        {i.interviewMode?.toLowerCase() === "online" && i.meetingLink && (
+                          <a href={i.meetingLink} target="_blank" rel="noopener noreferrer">
                             <Button variant="ghost" size="sm" className="gap-1 text-primary">
                               <ExternalLink className="w-3 h-3" /> Join
                             </Button>
                           </a>
                         )}
-                        {i.status === 'scheduled' && (
+                        {i.status?.toLowerCase() === "scheduled" && (
                           <Button variant="outline" size="sm" className="gap-1" onClick={() => markComplete(i)}>
                             <CheckCircle className="w-3 h-3" /> Mark Complete
                           </Button>

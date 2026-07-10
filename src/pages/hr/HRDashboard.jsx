@@ -6,33 +6,85 @@ import { Users, Calendar, UserCheck, UserX, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { dummyCandidates, dummyInterviews, dummyActivityLogs } from '@/lib/dummyData';
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 export default function HRDashboard() {
-  const candidates = dummyCandidates;
-  const interviews = dummyInterviews;
-  const activities = dummyActivityLogs;
+  const [candidates, setCandidates] = useState([]);
+const [interviews, setInterviews] = useState([]);
+const [activities, setActivities] = useState([]);
+
+useEffect(() => {
+  loadDashboard();
+}, []);
+
+const loadDashboard = async () => {
+  try {
+    console.log("Loading dashboard...");
+
+    const [candidateRes, interviewRes] = await Promise.all([
+      axios.get("http://localhost:8080/api/candidates"),
+      axios.get("http://localhost:8080/api/interviews"),
+    ]);
+
+    console.log("Candidates:", candidateRes.data);
+    console.log("Interviews:", interviewRes.data);
+
+    setCandidates(candidateRes.data);
+    setInterviews(interviewRes.data);
+
+    setActivities([]);
+
+  } catch (error) {
+    console.error("Dashboard Error:", error);
+  }
+};
 
   const applied = candidates.length;
-  const scheduled = interviews.filter(i => i.status === 'scheduled').length;
-  const selected = candidates.filter(c => ['selected', 'offer_sent', 'hired'].includes(c.status)).length;
-  const rejected = candidates.filter(c => c.status === 'rejected').length;
 
-  const upcomingInterviews = interviews
-    .filter(i => i.status === 'scheduled' && i.interview_date >= format(new Date(), 'yyyy-MM-dd'))
-    .sort((a, b) => a.interview_date.localeCompare(b.interview_date))
-    .slice(0, 5);
+const scheduled = interviews.filter(
+  i => i.status?.toUpperCase() === "SCHEDULED"
+).length;
 
-  const monthlyData = React.useMemo(() => {
-    const months = {};
-    interviews.forEach(i => {
-      if (i.interview_date) {
-        const month = format(new Date(i.interview_date), 'MMM yyyy');
-        months[month] = (months[month] || 0) + 1;
-      }
-    });
-    return Object.entries(months).map(([month, count]) => ({ month, interviews: count })).slice(-6);
-  }, [interviews]);
+const selected = candidates.filter(
+  c => c.status?.toUpperCase() === "SELECTED"
+).length;
+
+const rejected = candidates.filter(
+  c => c.status?.toUpperCase() === "REJECTED"
+).length;
+
+const upcomingInterviews = interviews
+  .filter(
+    i => i.status?.toUpperCase() === "SCHEDULED"
+  )
+  .sort(
+    (a, b) =>
+      new Date(a.interviewDateTime) -
+      new Date(b.interviewDateTime)
+  )
+  .slice(0, 5);
+  
+
+ const monthlyData = useMemo(() => {
+  const months = {};
+
+  interviews.forEach((i) => {
+    if (i.interviewDateTime) {
+      const month = format(
+        new Date(i.interviewDateTime),
+        "MMM yyyy"
+      );
+
+      months[month] = (months[month] || 0) + 1;
+    }
+  });
+
+  return Object.entries(months).map(([month, count]) => ({
+    month,
+    interviews: count,
+  }));
+}, [interviews]);
 
   return (
     <div>
@@ -77,16 +129,26 @@ export default function HRDashboard() {
             {upcomingInterviews.length > 0 ? (
               <div className="space-y-3">
                 {upcomingInterviews.map((interview) => (
-                  <div key={interview.id} className="flex items-center justify-between py-2 border-b border-border/50 last:border-0">
-                    <div>
-                      <p className="text-sm font-medium">{interview.candidate_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {interview.interview_date && format(new Date(interview.interview_date), 'MMM d')} · {interview.interview_time}
-                      </p>
-                    </div>
-                    <StatusBadge status={interview.status} />
-                  </div>
-                ))}
+  <div
+    key={interview.interviewId}
+    className="flex items-center justify-between py-2 border-b border-border/50 last:border-0"
+  >
+    <div>
+      <p className="text-sm font-medium">
+        {interview.candidateName}
+      </p>
+
+      <p className="text-xs text-muted-foreground">
+        {format(
+          new Date(interview.interviewDateTime),
+          "MMM d, yyyy • hh:mm a"
+        )}
+      </p>
+    </div>
+
+    <StatusBadge status={interview.status} />
+  </div>
+))}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground text-center py-8">No upcoming interviews</p>
