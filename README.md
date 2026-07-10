@@ -115,7 +115,7 @@ _Add screenshots of your dashboard, candidate management, and interview manageme
 
 ## Author
 
-**Anjali Neelam**
+**Rithika Venkatesh**
 
 ## License
 
