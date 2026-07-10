@@ -97,9 +97,6 @@ npm run dev
 npm run build
 ```
 
-## Live Demo
-
-https://rms-beta-gilt.vercel.app
 
 ## User Roles
 
